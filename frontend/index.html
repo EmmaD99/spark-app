@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="X-Frame-Options" content="DENY">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+<meta name="description" content="SPARK — L'app de rencontre qui connecte les esprits d'abord">
+<title>SPARK — Connecte les esprits</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Fraunces:ital,wght@0,300;1,300&family=Karla:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #07070e; --surface: #0f0f1a; --surface2: #161625;
+  --border: #1e1e35; --accent: #f0a500; --accent2: #e8350a;
+  --accent3: #00d4ff; --text: #eeeef8; --muted: #6060a0;
+  --gradient: linear-gradient(135deg, #f0a500, #e8350a);
+  --radius: 16px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; background:var(--bg); color:var(--text); font-family:'Karla',sans-serif; overflow-x:hidden; }
+
+/* PARTICLES */
+#cv { position:fixed; inset:0; pointer-events:none; z-index:0; opacity:0.45; }
+
+/* SCREENS */
+.screen { display:none; min-height:100vh; position:relative; z-index:1; flex-direction:column; }
+.screen.active { display:flex; }
+
+/* LANG SWITCHER */
+.lang-btn {
+  position:fixed; top:16px; right:16px; z-index:999;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:8px 14px; cursor:pointer;
+  font-family:'Karla',sans-serif; font-size:13px; color:var(--muted);
+  transition:all 0.2s; display:flex; align-items:center; gap:6px;
+}
+.lang-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+/* TOAST */
+.toast {
+  position:fixed; bottom:24px; left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:12px; padding:12px 20px; font-size:14px;
+  z-index:9999; transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  white-space:nowrap;
+}
+.toast.show { transform:translateX(-50%) translateY(0); }
+
+/* BUTTONS */
+.btn {
+  display:inline-flex; align-items:center; gap:8px;
+  padding:14px 28px; border-radius:12px; border:none;
+  font-family:'Karla',sans-serif; font-size:15px; font-weight:500;
+  cursor:pointer; transition:all 0.2s;
+}
+.btn-fire { background:var(--gradient); color:white; box-shadow:0 8px 28px rgba(240,165,0,0.25); }
+.btn-fire:hover { transform:translateY(-2px); box-shadow:0 14px 36px rgba(240,165,0,0.35); }
+.btn-ghost { background:transparent; color:var(--text); border:1px solid var(--border); }
+.btn-ghost:hover { border-color:var(--muted); }
+
+/* INPUTS */
+.input {
+  width:100%; background:var(--surface2); border:1px solid var(--border);
+  border-radius:12px; padding:13px 16px; color:var(--text);
+  font-family:'Karla',sans-serif; font-size:15px; outline:none;
+  transition:border-color 0.2s;
+}
+.input:focus { border-color:var(--accent); }
+.input::placeholder { color:var(--muted); }
+select.input option { background:var(--surface2); }
+textarea.input { resize:none; height:85px; }
+
+label {
+  display:block; font-size:11px; font-weight:600;
+  letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--muted); margin-bottom:7px;
+}
+
+/* CARD */
+.card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:24px; padding:36px; position:relative; overflow:hidden;
+}
+.card::before {
+  content:''; position:absolute; top:0; left:0; right:0;
+  height:2px; background:var(--gradient);
+}
+
+/* ===== LANDING ===== */
+#landing { align-items:center; justify-content:center; text-align:center; padding:60px 24px; }
+
+.orb {
+  position:absolute; border-radius:50%; pointer-events:none;
+  background:radial-gradient(circle, rgba(240,165,0,0.08) 0%, transparent 70%);
+  width:600px; height:600px; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  animation:orbPulse 4s ease-in-out infinite;
+}
+@keyframes orbPulse { 0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.6} 50%{transform:translate(-50%,-50%) scale(1.12);opacity:1} }
+
+.logo-mark { font-family:'Syne',sans-serif; font-size:13px; font-weight:800; letter-spacing:6px; color:var(--accent); margin-bottom:44px; display:flex; align-items:center; justify-content:center; gap:10px; }
+.logo-mark::before,.logo-mark::after { content:''; width:30px; height:1px; background:var(--accent); opacity:.4; }
+
+.eyebrow { font-size:12px; font-weight:500; color:var(--accent); letter-spacing:3px; text-transform:uppercase; margin-bottom:18px; opacity:0; animation:fadeUp .7s .2s ease forwards; }
+
+h1.hero { font-family:'Syne',sans-serif; font-size:clamp(42px,8vw,90px); font-weight:800; line-height:.95; letter-spacing:-3px; margin-bottom:16px; opacity:0; animation:fadeUp .7s .4s ease forwards; }
+h1.hero em { font-family:'Fraunces',serif; font-style:italic; font-weight:300; background:var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+
+.hero-sub { font-size:18px; color:var(--muted); max-width:440px; margin:0 auto 40px; line-height:1.65; font-weight:300; opacity:0; animation:fadeUp .7s .6s ease forwards; }
+
+.ctas { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; opacity:0; animation:fadeUp .7s .8s ease forwards; }
+
+.proof { display:flex; gap:44px; justify-content:center; margin-top:60px; padding-top:36px; border-top:1px solid var(--border); opacity:0; animation:fadeUp .7s 1s ease forwards; }
+.proof-num { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; background:var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.proof-label { font-size:12px; color:var(--muted); margin-top:3px; }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+/* ===== ONBOARDING ===== */
+#onboarding { align-items:center; justify-content:center; padding:40px 20px; }
+
+.steps { display:flex; gap:8px; margin-bottom:28px; }
+.step-dot { flex:1; height:3px; border-radius:2px; background:var(--border); transition:background .3s; }
+.step-dot.on { background:var(--accent); }
+
+.ob-title { font-family:'Syne',sans-serif; font-size:26px; font-weight:700; margin-bottom:6px; letter-spacing:-.5px; }
+.ob-sub { color:var(--muted); font-size:14px; margin-bottom:26px; line-height:1.6; }
+.fg { margin-bottom:15px; }
+
+.avatar-grid { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px; }
+.av { width:54px; height:54px; border-radius:50%; background:var(--surface2); border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:26px; cursor:pointer; transition:all .2s; }
+.av.sel { border-color:var(--accent); box-shadow:0 0 0 3px rgba(240,165,0,.2); }
+
+.int-grid { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px; }
+.itag { padding:8px 14px; border-radius:20px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:13px; cursor:pointer; transition:all .2s; font-family:'Karla',sans-serif; }
+.itag.sel { background:rgba(240,165,0,.1); border-color:rgba(240,165,0,.35); color:var(--accent); }
+
+.intent-opts { display:flex; flex-direction:column; gap:8px; margin-bottom:18px; }
+.iopt { padding:13px 16px; border-radius:12px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:14px; cursor:pointer; transition:all .2s; text-align:left; font-family:'Karla',sans-serif; }
+.iopt.sel { background:rgba(240,165,0,.08); border-color:rgba(240,165,0,.35); color:var(--accent); }
+
+.btn-row { display:flex; gap:10px; margin-top:6px; }
+.btn-back { flex:1; padding:13px; border-radius:12px; border:1px solid var(--border); background:var(--surface2); color:var(--text); font-family:'Karla',sans-serif; font-size:14px; cursor:pointer; }
+.btn-next { flex:2; padding:13px; border-radius:12px; border:none; background:var(--gradient); color:white; font-family:'Karla',sans-serif; font-size:15px; font-weight:600; cursor:pointer; transition:opacity .2s; }
+.btn-next:hover { opacity:.9; }
+
+/* ===== APP ===== */
+#app { padding:0; }
+
+.app-nav {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 24px; border-bottom:1px solid var(--border);
+  background:rgba(7,7,14,.9); backdrop-filter:blur(20px);
+  position:sticky; top:0; z-index:100;
+}
+.app-logo { font-family:'Syne',sans-serif; font-weight:800; font-size:20px; letter-spacing:3px; color:var(--accent); }
+.nav-tabs { display:flex; gap:2px; background:var(--surface); border-radius:10px; padding:4px; }
+.ntab { padding:7px 16px; border-radius:7px; border:none; background:transparent; color:var(--muted); font-family:'Karla',sans-serif; font-size:14px; cursor:pointer; transition:all .2s; font-weight:500; }
+.ntab.active { background:var(--surface2); color:var(--text); }
+.credits-pill { display:flex; align-items:center; gap:7px; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:7px 13px; font-size:13px; font-weight:500; }
+.credits-pill .cn { color:var(--accent); font-weight:700; }
+
+.tab { display:none; flex:1; }
+.tab.active { display:flex; flex-direction:column; }
+
+/* DISCOVER */
+#t-discover { flex-direction:row; height:calc(100vh - 65px); }
+.disc-left { flex:1; padding:24px; overflow-y:auto; border-right:1px solid var(--border); }
+.disc-right { width:350px; min-width:350px; padding:24px; overflow-y:auto; display:flex; flex-direction:column; gap:16px; }
+
+.th { font-family:'Syne',sans-serif; font-size:20px; font-weight:700; margin-bottom:3px; }
+.ts { color:var(--muted); font-size:13px; margin-bottom:20px; }
+
+.pgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
+
+.pcard { background:var(--surface); border:1px solid var(--border); border-radius:18px; overflow:hidden; cursor:pointer; transition:all .25s; }
+.pcard:hover { transform:translateY(-4px); border-color:rgba(240,165,0,.25); box-shadow:0 16px 40px rgba(0,0,0,.4); }
+
+.pav { aspect-ratio:1; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:54px; position:relative; overflow:hidden; }
+.pav::after { content:''; position:absolute; inset:0; backdrop-filter:blur(16px); background:rgba(7,7,14,.25); transition:all .8s; }
+.pav.revealed::after { backdrop-filter:blur(0); opacity:0; }
+.blur-lbl { position:absolute; bottom:10px; left:50%; transform:translateX(-50%); z-index:2; font-size:10px; color:rgba(255,255,255,.4); white-space:nowrap; }
+
+.cbadge { position:absolute; top:8px; right:8px; z-index:3; border-radius:7px; padding:4px 9px; font-size:11px; font-weight:700; }
+.cbadge.hi { background:rgba(34,197,94,.15); color:#22c55e; border:1px solid rgba(34,197,94,.3); }
+.cbadge.md { background:rgba(240,165,0,.15); color:var(--accent); border:1px solid rgba(240,165,0,.3); }
+
+.pinfo { padding:12px; }
+.pname { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; }
+.pmeta { font-size:12px; color:var(--muted); margin:3px 0 8px; }
+.ptags { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:10px; }
+.pt { background:var(--surface2); border-radius:4px; padding:2px 7px; font-size:10px; color:var(--muted); }
+.pcta { width:100%; padding:9px; border-radius:9px; border:1px solid rgba(240,165,0,.2); background:rgba(240,165,0,.08); color:var(--accent); font-size:12px; font-weight:600; cursor:pointer; font-family:'Karla',sans-serif; transition:all .2s; }
+.pcta:hover { background:rgba(240,165,0,.15); }
+
+/* MISSION PANEL */
+.mission-card { background:var(--surface); border:1px solid rgba(240,165,0,.2); border-radius:18px; padding:20px; position:relative; overflow:hidden; }
+.mission-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--gradient); }
+.mwith { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+.mwith-av { font-size:32px; }
+.mwith-who { font-size:12px; color:var(--muted); }
+.mwith-name { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; }
+.mlabel { font-size:10px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--accent); margin-bottom:8px; }
+.mq { font-family:'Fraunces',serif; font-style:italic; font-size:16px; line-height:1.55; margin-bottom:14px; }
+.msgs { display:flex; flex-direction:column; gap:8px; max-height:180px; overflow-y:auto; margin-bottom:12px; }
+.msg { padding:9px 13px; border-radius:12px; font-size:13px; line-height:1.5; max-width:85%; }
+.msg.me { background:rgba(240,165,0,.1); border:1px solid rgba(240,165,0,.2); align-self:flex-end; }
+.msg.them { background:var(--surface2); border:1px solid var(--border); align-self:flex-start; }
+.msg.ai { background:rgba(0,212,255,.06); border:1px solid rgba(0,212,255,.15); color:var(--accent3); font-size:11px; font-style:italic; align-self:center; text-align:center; max-width:100%; }
+.minput-row { display:flex; gap:8px; }
+.minput { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:11px 13px; color:var(--text); font-family:'Karla',sans-serif; font-size:13px; outline:none; }
+.minput:focus { border-color:var(--accent); }
+.msend { width:42px; height:42px; border-radius:9px; border:none; background:var(--gradient); color:white; font-size:17px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:transform .2s; }
+.msend:hover { transform:scale(1.08); }
+
+.coach-card { background:var(--surface); border:1px solid rgba(0,212,255,.15); border-radius:14px; padding:14px; }
+.coach-title { font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent3); margin-bottom:7px; }
+.coach-tip { font-size:12px; color:var(--muted); line-height:1.6; }
+
+/* MISSIONS TAB */
+#t-missions { padding:24px; overflow-y:auto; }
+.gen-box { background:var(--surface); border:1px solid var(--border); border-radius:22px; padding:28px; text-align:center; margin-bottom:24px; position:relative; overflow:hidden; }
+.gen-box::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--gradient); }
+.gen-icon { font-size:44px; display:block; margin-bottom:12px; animation:float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+.gen-title { font-family:'Syne',sans-serif; font-size:20px; font-weight:700; margin-bottom:6px; }
+.gen-sub { color:var(--muted); font-size:13px; margin-bottom:18px; line-height:1.6; }
+.cats { display:flex; gap:7px; justify-content:center; flex-wrap:wrap; margin-bottom:16px; }
+.cat { padding:7px 14px; border-radius:20px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:12px; cursor:pointer; transition:all .2s; font-family:'Karla',sans-serif; }
+.cat.active { background:rgba(240,165,0,.1); border-color:rgba(240,165,0,.3); color:var(--accent); }
+.gen-result { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:18px; margin-bottom:16px; min-height:72px; display:flex; align-items:center; justify-content:center; }
+.gen-text { font-family:'Fraunces',serif; font-style:italic; font-size:16px; line-height:1.6; text-align:center; }
+.dots { display:flex; gap:5px; }
+.dot { width:7px; height:7px; border-radius:50%; background:var(--accent); animation:dp 1.2s ease-in-out infinite; }
+.dot:nth-child(2){animation-delay:.2s} .dot:nth-child(3){animation-delay:.4s}
+@keyframes dp { 0%,80%,100%{transform:scale(.8);opacity:.4} 40%{transform:scale(1.2);opacity:1} }
+
+/* MATCHES TAB */
+#t-matches { padding:24px; overflow-y:auto; }
+.mgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; margin-top:16px; }
+.mcard { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:20px; cursor:pointer; transition:all .25s; position:relative; overflow:hidden; }
+.mcard:hover { transform:translateY(-3px); border-color:rgba(240,165,0,.25); }
+.mcard.new::after { content:'NEW'; position:absolute; top:12px; right:12px; background:var(--gradient); color:white; font-size:9px; font-weight:700; letter-spacing:1px; padding:3px 9px; border-radius:5px; }
+.mhead { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.mav { font-size:40px; }
+.mname { font-family:'Syne',sans-serif; font-size:17px; font-weight:700; }
+.mloc { font-size:12px; color:var(--muted); }
+.mcompat { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+.mbar { flex:1; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+.mfill { height:100%; background:var(--gradient); border-radius:2px; }
+.mpct { font-size:13px; font-weight:700; color:var(--accent); }
+.mmission { font-size:12px; color:var(--muted); font-style:italic; padding:9px 13px; background:var(--surface2); border-radius:9px; border-left:2px solid var(--accent); margin-bottom:14px; }
+.mbtn { width:100%; padding:11px; border-radius:11px; border:none; background:var(--gradient); color:white; font-family:'Karla',sans-serif; font-size:14px; font-weight:500; cursor:pointer; }
+
+/* SHOP TAB */
+#t-shop { padding:24px; overflow-y:auto; }
+.shop-hero { background:var(--surface); border:1px solid var(--border); border-radius:22px; padding:28px; text-align:center; margin-bottom:22px; }
+.shop-title { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; margin-bottom:5px; }
+.shop-sub { color:var(--muted); font-size:13px; margin-bottom:18px; }
+.cur-credits { display:inline-flex; align-items:center; gap:10px; background:var(--surface2); border:1px solid rgba(240,165,0,.2); border-radius:14px; padding:14px 22px; }
+.cn-big { font-family:'Syne',sans-serif; font-size:34px; font-weight:800; color:var(--accent); }
+.cn-lbl { font-size:12px; color:var(--muted); }
+.sec-lbl { font-size:11px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin:20px 0 12px; }
+.packs { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-bottom:24px; }
+.pack { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:20px 16px; text-align:center; cursor:pointer; transition:all .2s; position:relative; overflow:hidden; }
+.pack:hover { transform:translateY(-3px); border-color:rgba(240,165,0,.3); }
+.pack.pop { border-color:rgba(240,165,0,.35); background:rgba(240,165,0,.04); }
+.pop-badge { background:var(--gradient); color:white; font-size:9px; font-weight:700; letter-spacing:1px; padding:3px 14px; border-radius:0 0 8px 8px; position:absolute; top:0; left:50%; transform:translateX(-50%); white-space:nowrap; }
+.pack-em { font-size:32px; margin-bottom:8px; display:block; }
+.pack-name { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; margin-bottom:3px; }
+.pack-cr { color:var(--accent); font-size:12px; margin-bottom:10px; }
+.pack-price { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; margin-bottom:10px; }
+.pack-buy { width:100%; padding:9px; border-radius:9px; border:1px solid var(--border); background:var(--surface2); color:var(--text); font-family:'Karla',sans-serif; font-size:12px; cursor:pointer; transition:all .2s; }
+.pack-buy:hover { background:rgba(240,165,0,.1); border-color:rgba(240,165,0,.3); color:var(--accent); }
+.pack.pop .pack-buy { background:var(--gradient); border:none; color:white; }
+.perks { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px; }
+.perk { background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:15px; display:flex; align-items:flex-start; gap:10px; }
+.perk-ic { font-size:22px; }
+.perk-nm { font-size:13px; font-weight:500; margin-bottom:2px; }
+.perk-ds { font-size:11px; color:var(--muted); }
+.perk-ct { font-size:11px; color:var(--accent); font-weight:600; margin-top:5px; }
+
+/* MODAL */
+.overlay { display:none; position:fixed; inset:0; background:rgba(7,7,14,.85); z-index:999; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(10px); }
+.overlay.active { display:flex; }
+.modal { background:var(--surface); border:1px solid var(--border); border-radius:26px; padding:36px; max-width:460px; width:100%; position:relative; animation:mIn .3s ease; }
+@keyframes mIn { from{opacity:0;transform:scale(.95) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+.modal::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--gradient); border-radius:26px 26px 0 0; }
+.mclose { position:absolute; top:16px; right:16px; width:30px; height:30px; border-radius:7px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.mav2 { font-size:60px; text-align:center; margin-bottom:12px; }
+.mname2 { font-family:'Syne',sans-serif; font-size:24px; font-weight:700; text-align:center; margin-bottom:3px; }
+.mmeta2 { text-align:center; color:var(--muted); font-size:13px; margin-bottom:20px; }
+.mcompat2 { display:flex; align-items:center; gap:10px; background:var(--surface2); border-radius:12px; padding:12px 16px; margin-bottom:16px; }
+.mc-lbl { font-size:12px; color:var(--muted); flex:1; }
+.mc-bar { flex:2; height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
+.mc-fill { height:100%; background:var(--gradient); border-radius:3px; }
+.mc-pct { font-weight:700; color:var(--accent); font-size:14px; }
+.mtags2 { display:flex; gap:7px; flex-wrap:wrap; justify-content:center; margin-bottom:22px; }
+.mt2 { background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:4px 10px; font-size:11px; color:var(--muted); }
+.mbtns { display:flex; gap:9px; }
+.mbtn2 { flex:1; padding:13px; border-radius:11px; border:none; font-family:'Karla',sans-serif; font-size:14px; font-weight:500; cursor:pointer; transition:all .2s; }
+.mbtn2.pri { background:var(--gradient); color:white; }
+.mbtn2.sec { background:var(--surface2); border:1px solid var(--border); color:var(--text); }
+
+@media(max-width:768px) {
+  #t-discover { flex-direction:column; height:auto; }
+  .disc-right { width:100%; min-width:unset; border-top:1px solid var(--border); }
+  .disc-left { border-right:none; }
+  .proof { gap:20px; }
+  h1.hero { letter-spacing:-1.5px; }
+}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<!-- LANG SWITCHER -->
+<button class="lang-btn" onclick="toggleLang()" id="lang-toggle">🌐 EN</button>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ===== LANDING ===== -->
+<div class="screen active" id="landing">
+  <div class="orb"></div>
+  <div class="logo-mark">SPARK</div>
+  <p class="eyebrow" data-i18n="eyebrow">Rencontres par l'intelligence</p>
+  <h1 class="hero" data-i18n="hero">Les cerveaux<br>d'abord,<br><em>les visages</em> après.</h1>
+  <p class="hero-sub" data-i18n="herosub">Connecte-toi à quelqu'un à travers une mission générée par l'IA. Aucun swipe. Aucun filtre superficiel.</p>
+  <div class="ctas">
+    <button class="btn btn-fire" onclick="goTo('onboarding')" data-i18n="cta_start">⚡ Commencer</button>
+    <button class="btn btn-ghost" onclick="goTo('app')" data-i18n="cta_explore">Explorer →</button>
+  </div>
+  <div class="proof">
+    <div><div class="proof-num">94%</div><div class="proof-label" data-i18n="p1">2nd RDV après mission</div></div>
+    <div><div class="proof-num">180+</div><div class="proof-label" data-i18n="p2">pays représentés</div></div>
+    <div><div class="proof-num">3x</div><div class="proof-label" data-i18n="p3">plus de conv. profondes</div></div>
+  </div>
+</div>
+
+<!-- ===== ONBOARDING ===== -->
+<div class="screen" id="onboarding">
+  <div style="display:flex;align-items:center;justify-content:center;flex:1;padding:40px 20px;">
+    <div class="card" style="max-width:430px;width:100%;">
+      <div class="steps">
+        <div class="step-dot on" id="sd1"></div>
+        <div class="step-dot" id="sd2"></div>
+        <div class="step-dot" id="sd3"></div>
+      </div>
+
+      <!-- Step 1 -->
+      <div id="s1">
+        <div class="ob-title" data-i18n="ob1_title">Qui es-tu ?</div>
+        <p class="ob-sub" data-i18n="ob1_sub">Ces infos nous aident à créer des missions sur mesure.</p>
+        <div class="fg"><label data-i18n="l_name">PRÉNOM</label><input class="input" id="ob-name" data-i18n-ph="ph_name" placeholder="Ex: Sofia"></div>
+        <div class="fg"><label data-i18n="l_age">ÂGE</label><input class="input" type="number" id="ob-age" placeholder="24" min="18" max="80"></div>
+        <div class="fg"><label data-i18n="l_country">PAYS</label>
+          <select class="input" id="ob-country">
+            <option value="" data-i18n="sel_country">Sélectionne ton pays</option>
+            <option>🇫🇷 France</option><option>🇬🇧 United Kingdom</option>
+            <option>🇺🇸 United States</option><option>🇪🇸 España</option>
+            <option>🇩🇪 Deutschland</option><option>🇮🇹 Italia</option>
+            <option>🇧🇷 Brasil</option><option>🇯🇵 日本</option>
+            <option>🇲🇦 Maroc</option><option>🇸🇳 Sénégal</option>
+            <option>🇨🇦 Canada</option><option>🇦🇺 Australia</option>
+            <option data-i18n="other">Autre / Other</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label data-i18n="l_avatar">AVATAR</label>
+          <div class="avatar-grid" id="av-grid">
+            <div class="av sel" data-v="🦋" onclick="selAv(this)">🦋</div>
+            <div class="av" data-v="🌊" onclick="selAv(this)">🌊</div>
+            <div class="av" data-v="🔥" onclick="selAv(this)">🔥</div>
+            <div class="av" data-v="🌙" onclick="selAv(this)">🌙</div>
+            <div class="av" data-v="⚡" onclick="selAv(this)">⚡</div>
+            <div class="av" data-v="🌸" onclick="selAv(this)">🌸</div>
+            <div class="av" data-v="🎯" onclick="selAv(this)">🎯</div>
+            <div class="av" data-v="🌍" onclick="selAv(this)">🌍</div>
+          </div>
+        </div>
+        <button class="btn-next" onclick="goStep(2)" data-i18n="next">Continuer →</button>
+      </div>
+
+      <!-- Step 2 -->
+      <div id="s2" style="display:none">
+        <div class="ob-title" data-i18n="ob2_title">Tes passions</div>
+        <p class="ob-sub" data-i18n="ob2_sub">Choisis jusqu'à 5 — l'IA les utilisera pour tes missions.</p>
+        <div class="int-grid" id="int-grid">
+          <div class="itag" onclick="togInt(this)">🎨 Art</div>
+          <div class="itag" onclick="togInt(this)">🎵 Music</div>
+          <div class="itag" onclick="togInt(this)">🏃 Sport</div>
+          <div class="itag" onclick="togInt(this)">📚 Books</div>
+          <div class="itag" onclick="togInt(this)">🍳 Food</div>
+          <div class="itag" onclick="togInt(this)">✈️ Travel</div>
+          <div class="itag" onclick="togInt(this)">💻 Tech</div>
+          <div class="itag" onclick="togInt(this)">🎬 Cinema</div>
+          <div class="itag" onclick="togInt(this)">🌿 Nature</div>
+          <div class="itag" onclick="togInt(this)">🧠 Philosophy</div>
+          <div class="itag" onclick="togInt(this)">🎮 Gaming</div>
+          <div class="itag" onclick="togInt(this)">🔬 Science</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-back" onclick="goStep(1)" data-i18n="back">← Retour</button>
+          <button class="btn-next" onclick="goStep(3)" data-i18n="next">Continuer →</button>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div id="s3" style="display:none">
+        <div class="ob-title" data-i18n="ob3_title">Ton intention</div>
+        <div class="intent-opts">
+          <button class="iopt" onclick="selIntent(this)">💞 <span data-i18n="i1">Relation sérieuse</span></button>
+          <button class="iopt" onclick="selIntent(this)">✨ <span data-i18n="i2">Rencontres & connexions</span></button>
+          <button class="iopt" onclick="selIntent(this)">🌍 <span data-i18n="i3">Amis dans le monde</span></button>
+          <button class="iopt" onclick="selIntent(this)">🗣️ <span data-i18n="i4">Pratiquer une langue</span></button>
+          <button class="iopt" onclick="selIntent(this)">🤷 <span data-i18n="i5">Je vois où ça mène</span></button>
+        </div>
+        <div class="fg" style="margin-top:14px">
+          <label data-i18n="l_bio">EN 2 PHRASES : QUI ES-TU ?</label>
+          <textarea class="input" id="ob-bio" data-i18n-ph="ph_bio" placeholder="J'adore débattre de tout et cuisiner à minuit..."></textarea>
+        </div>
+        <div class="fg"><label data-i18n="l_email">EMAIL</label><input class="input" type="email" id="ob-email" placeholder="ton@email.com"></div>
+        <div class="fg"><label data-i18n="l_pw">MOT DE PASSE</label><input class="input" type="password" id="ob-pw" placeholder="8 caractères minimum"></div>
+        <div class="btn-row">
+          <button class="btn-back" onclick="goStep(2)" data-i18n="back">← Retour</button>
+          <button class="btn-next" onclick="submitSignup()" data-i18n="create">Créer mon profil ⚡</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div class="screen" id="app">
+  <nav class="app-nav">
+    <div class="app-logo">SPARK</div>
+    <div class="nav-tabs">
+      <button class="ntab active" onclick="switchTab('discover',this)" data-i18n="tab_discover">Découvrir</button>
+      <button class="ntab" onclick="switchTab('missions',this)" data-i18n="tab_missions">Missions</button>
+      <button class="ntab" onclick="switchTab('matches',this)" data-i18n="tab_matches">Matchs</button>
+      <button class="ntab" onclick="switchTab('shop',this)" data-i18n="tab_shop">Boutique</button>
+    </div>
+    <div class="credits-pill">⚡ <span class="cn" id="cr-display">12</span> <span data-i18n="credits">crédits</span></div>
+  </nav>
+
+  <!-- DISCOVER -->
+  <div class="tab active" id="t-discover">
+    <div class="disc-left">
+      <div class="th" data-i18n="disc_title">Profils du jour</div>
+      <div class="ts" data-i18n="disc_sub">Clique pour voir la compatibilité et lancer une mission</div>
+      <div class="pgrid" id="pgrid"></div>
+    </div>
+    <div class="disc-right">
+      <div class="th" data-i18n="active_mission">Mission en cours</div>
+      <div class="mission-card">
+        <div class="mwith">
+          <div class="mwith-av">🌊</div>
+          <div><div class="mwith-who" data-i18n="mission_with">Mission avec</div><div class="mwith-name">Camille, 26 — 🇧🇷</div></div>
+        </div>
+        <div class="mlabel">⚡ MISSION ACTIVE</div>
+        <div class="mq">"Si tu pouvais effacer un souvenir mais qu'il disparaîtrait aussi pour ceux qui l'ont partagé avec toi — le ferais-tu ?"</div>
+        <div class="msgs" id="msgs">
+          <div class="msg ai">🤖 Mission générée. Répondez chacun à votre tour.</div>
+          <div class="msg them">Je crois que non... même les mauvais souvenirs ont construit qui je suis.</div>
+          <div class="msg me">Fascinant. Moi j'effacerais peut-être une rupture — mais serais-je encore moi après ?</div>
+        </div>
+        <div class="minput-row">
+          <input class="minput" id="msg-in" data-i18n-ph="ph_reply" placeholder="Ta réponse..." onkeypress="if(event.key==='Enter')sendMsg()">
+          <button class="msend" onclick="sendMsg()">↑</button>
+        </div>
+      </div>
+      <div class="coach-card">
+        <div class="coach-title">🧠 <span data-i18n="coach">Coach IA</span></div>
+        <div class="coach-tip" id="coach-tip" data-i18n="coach_tip">Elle a partagé quelque chose de vulnérable. Montre de l'empathie avant de donner ton point de vue.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MISSIONS -->
+  <div class="tab" id="t-missions">
+    <div class="gen-box">
+      <span class="gen-icon">⚡</span>
+      <div class="gen-title" data-i18n="gen_title">Génère une mission</div>
+      <p class="gen-sub" data-i18n="gen_sub">L'IA crée une question unique basée sur tes centres d'intérêt.</p>
+      <div class="cats">
+        <button class="cat active" onclick="selCat(this,'philosophy')">🧠 <span data-i18n="cat_philo">Philo</span></button>
+        <button class="cat" onclick="selCat(this,'creativity')">🎨 <span data-i18n="cat_crea">Créativité</span></button>
+        <button class="cat" onclick="selCat(this,'adventure')">🌍 <span data-i18n="cat_adv">Aventure</span></button>
+        <button class="cat" onclick="selCat(this,'humor')">😂 <span data-i18n="cat_hum">Humour</span></button>
+        <button class="cat" onclick="selCat(this,'emotional')">💞 <span data-i18n="cat_emo">Émotionnel</span></button>
+      </div>
+      <div class="gen-result" id="gen-result">
+        <div class="gen-text" id="gen-text" data-i18n="gen_placeholder">Clique sur Générer pour créer une mission unique...</div>
+      </div>
+      <button class="btn btn-fire" onclick="generateMission()" style="justify-content:center" data-i18n="gen_btn">⚡ Générer (1 crédit)</button>
+    </div>
+  </div>
+
+  <!-- MATCHES -->
+  <div class="tab" id="t-matches">
+    <div style="padding:24px">
+      <div class="th" data-i18n="matches_title">Tes Matchs</div>
+      <div class="ts" data-i18n="matches_sub">Connexions créées après des missions réussies</div>
+      <div class="mgrid">
+        <div class="mcard new">
+          <div class="mhead"><div class="mav">🔥</div><div><div class="mname">Lucas</div><div class="mloc">28 · Madrid 🇪🇸</div></div></div>
+          <div class="mcompat"><span style="font-size:12px;color:var(--muted)" data-i18n="compat">Compatibilité</span><div class="mbar"><div class="mfill" style="width:91%"></div></div><span class="mpct">91%</span></div>
+          <div class="mmission">"Si demain tu savais que personne ne te jugerait, que ferais-tu différemment ?"</div>
+          <button class="mbtn" onclick="showToast('💬 Chat ouvert !')" data-i18n="continue_chat">Continuer la conversation</button>
+        </div>
+        <div class="mcard">
+          <div class="mhead"><div class="mav">🌸</div><div><div class="mname">Amara</div><div class="mloc">25 · Dakar 🇸🇳</div></div></div>
+          <div class="mcompat"><span style="font-size:12px;color:var(--muted)" data-i18n="compat">Compatibilité</span><div class="mbar"><div class="mfill" style="width:84%"></div></div><span class="mpct">84%</span></div>
+          <div class="mmission">"Quelle est la chose la plus courageuse que tu n'as jamais faite ?"</div>
+          <button class="mbtn" onclick="showToast('💬 Chat ouvert !')" data-i18n="continue_chat">Continuer la conversation</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHOP -->
+  <div class="tab" id="t-shop">
+    <div class="shop-hero">
+      <div class="shop-title" data-i18n="shop_title">Boutique Spark</div>
+      <p class="shop-sub" data-i18n="shop_sub">Génère des missions, révèle des profils, booste ta visibilité</p>
+      <div class="cur-credits">
+        <span style="font-size:22px">⚡</span>
+        <div><div class="cn-big" id="cr-shop">12</div><div class="cn-lbl" data-i18n="credits_avail">crédits disponibles</div></div>
+      </div>
+    </div>
+    <div style="padding:0 24px 24px">
+      <div class="sec-lbl" data-i18n="packs_title">PACKS DE CRÉDITS</div>
+      <div class="packs">
+        <div class="pack"><span class="pack-em">⚡</span><div class="pack-name">Starter</div><div class="pack-cr">10 crédits</div><div class="pack-price">1,99€</div><button class="pack-buy" onclick="buyCr(10)" data-i18n="buy">Acheter</button></div>
+        <div class="pack pop"><div class="pop-badge" data-i18n="popular">⭐ POPULAIRE</div><span class="pack-em" style="margin-top:16px">🔥</span><div class="pack-name">Pro</div><div class="pack-cr">35 crédits</div><div class="pack-price">4,99€</div><button class="pack-buy" onclick="buyCr(35)" data-i18n="buy">Acheter</button></div>
+        <div class="pack"><span class="pack-em">💎</span><div class="pack-name">Premium</div><div class="pack-cr">100 crédits</div><div class="pack-price">9,99€</div><button class="pack-buy" onclick="buyCr(100)" data-i18n="buy">Acheter</button></div>
+        <div class="pack"><span class="pack-em">🚀</span><div class="pack-name">Illimité</div><div class="pack-cr">∞ / mois</div><div class="pack-price">14,99€<span style="font-size:11px;font-weight:400;color:var(--muted)">/mois</span></div><button class="pack-buy" onclick="showToast('🚀 Abonnement activé !')" data-i18n="subscribe">S'abonner</button></div>
+      </div>
+      <div class="sec-lbl" data-i18n="perks_title">UTILISATION DES CRÉDITS</div>
+      <div class="perks">
+        <div class="perk"><div class="perk-ic">⚡</div><div><div class="perk-nm" data-i18n="pk1">Générer une mission</div><div class="perk-ds" data-i18n="pk1d">Question unique IA</div><div class="perk-ct">1 crédit</div></div></div>
+        <div class="perk"><div class="perk-ic">👁️</div><div><div class="perk-nm" data-i18n="pk2">Révéler une photo</div><div class="perk-ds" data-i18n="pk2d">Voir avant la fin</div><div class="perk-ct">2 crédits</div></div></div>
+        <div class="perk"><div class="perk-ic">🚀</div><div><div class="perk-nm" data-i18n="pk3">Boost profil</div><div class="perk-ds" data-i18n="pk3d">Visibilité x3 / 1h</div><div class="perk-ct">5 crédits</div></div></div>
+        <div class="perk"><div class="perk-ic">💌</div><div><div class="perk-nm" data-i18n="pk4">Super Spark</div><div class="perk-ds" data-i18n="pk4d">Mission prioritaire</div><div class="perk-ct">3 crédits</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div class="overlay" id="pmodal">
+  <div class="modal">
+    <button class="mclose" onclick="closeModal()">✕</button>
+    <div class="mav2" id="m-av"></div>
+    <div class="mname2" id="m-name"></div>
+    <div class="mmeta2" id="m-meta"></div>
+    <div class="mcompat2">
+      <span class="mc-lbl" data-i18n="ai_compat">Compatibilité IA</span>
+      <div class="mc-bar"><div class="mc-fill" id="m-fill"></div></div>
+      <span class="mc-pct" id="m-pct"></span>
+    </div>
+    <div class="mtags2" id="m-tags"></div>
+    <div class="mbtns">
+      <button class="mbtn2 sec" onclick="closeModal()" data-i18n="pass">Passer</button>
+      <button class="mbtn2 pri" onclick="launchMission()" data-i18n="launch_mission">⚡ Mission (1 crédit)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== i18n =====
+const T = {
+  fr: {
+    eyebrow:'Rencontres par l\'intelligence', hero:'Les cerveaux<br>d\'abord,<br><em>les visages</em> après.',
+    herosub:'Connecte-toi à quelqu\'un à travers une mission générée par l\'IA. Aucun swipe. Aucun filtre.',
+    cta_start:'⚡ Commencer', cta_explore:'Explorer →',
+    p1:'2nd RDV après mission', p2:'pays représentés', p3:'plus de conv. profondes',
+    ob1_title:'Qui es-tu ?', ob1_sub:'Ces infos nous aident à créer des missions sur mesure.',
+    ob2_title:'Tes passions', ob2_sub:'Choisis jusqu\'à 5 — l\'IA les utilisera pour tes missions.',
+    ob3_title:'Ton intention',
+    l_name:'PRÉNOM', l_age:'ÂGE', l_country:'PAYS', l_avatar:'AVATAR',
+    l_bio:'EN 2 PHRASES : QUI ES-TU ?', l_email:'EMAIL', l_pw:'MOT DE PASSE',
+    ph_name:'Ex: Sofia', ph_bio:'J\'adore débattre et cuisiner à minuit...', ph_reply:'Ta réponse...',
+    sel_country:'Sélectionne ton pays', other:'Autre',
+    i1:'Relation sérieuse', i2:'Rencontres & connexions', i3:'Amis dans le monde',
+    i4:'Pratiquer une langue', i5:'Je vois où ça mène',
+    next:'Continuer →', back:'← Retour', create:'Créer mon profil ⚡',
+    tab_discover:'Découvrir', tab_missions:'Missions', tab_matches:'Matchs', tab_shop:'Boutique',
+    credits:'crédits', disc_title:'Profils du jour', disc_sub:'Clique pour voir la compatibilité et lancer une mission',
+    active_mission:'Mission en cours', mission_with:'Mission avec',
+    coach:'Coach IA', coach_tip:'Elle a partagé quelque chose de vulnérable. Montre de l\'empathie avant de donner ton point de vue.',
+    gen_title:'Génère une mission', gen_sub:'L\'IA crée une question unique basée sur tes centres d\'intérêt.',
+    cat_philo:'Philo', cat_crea:'Créativité', cat_adv:'Aventure', cat_hum:'Humour', cat_emo:'Émotionnel',
+    gen_placeholder:'Clique sur Générer pour créer une mission unique...', gen_btn:'⚡ Générer (1 crédit)',
+    matches_title:'Tes Matchs', matches_sub:'Connexions créées après des missions réussies',
+    compat:'Compatibilité', continue_chat:'Continuer la conversation',
+    shop_title:'Boutique Spark', shop_sub:'Génère des missions, révèle des profils, booste ta visibilité',
+    credits_avail:'crédits disponibles', packs_title:'PACKS DE CRÉDITS',
+    popular:'⭐ POPULAIRE', buy:'Acheter', subscribe:'S\'abonner', perks_title:'UTILISATION DES CRÉDITS',
+    pk1:'Générer une mission', pk1d:'Question unique IA', pk2:'Révéler une photo', pk2d:'Voir avant la fin',
+    pk3:'Boost profil', pk3d:'Visibilité x3 / 1h', pk4:'Super Spark', pk4d:'Mission prioritaire',
+    ai_compat:'Compatibilité IA', pass:'Passer', launch_mission:'⚡ Mission (1 crédit)'
+  },
+  en: {
+    eyebrow:'Connection through intelligence', hero:'Minds first,<br>faces<br><em>after.</em>',
+    herosub:'Connect with someone through an AI-generated mission. No swiping. No superficial filters.',
+    cta_start:'⚡ Get Started', cta_explore:'Explore →',
+    p1:'2nd date after mission', p2:'countries represented', p3:'deeper conversations',
+    ob1_title:'Who are you?', ob1_sub:'This helps us create personalized missions for you.',
+    ob2_title:'Your passions', ob2_sub:'Choose up to 5 — the AI will use them for your missions.',
+    ob3_title:'Your intention',
+    l_name:'FIRST NAME', l_age:'AGE', l_country:'COUNTRY', l_avatar:'AVATAR',
+    l_bio:'IN 2 SENTENCES: WHO ARE YOU?', l_email:'EMAIL', l_pw:'PASSWORD',
+    ph_name:'E.g. Sofia', ph_bio:'I love debating everything and cooking at midnight...', ph_reply:'Your reply...',
+    sel_country:'Select your country', other:'Other',
+    i1:'Serious relationship', i2:'Meetings & connections', i3:'Friends worldwide',
+    i4:'Practice a language', i5:'See where it goes',
+    next:'Continue →', back:'← Back', create:'Create my profile ⚡',
+    tab_discover:'Discover', tab_missions:'Missions', tab_matches:'Matches', tab_shop:'Shop',
+    credits:'credits', disc_title:'Today\'s profiles', disc_sub:'Click to see AI compatibility and launch a mission',
+    active_mission:'Active mission', mission_with:'Mission with',
+    coach:'AI Coach', coach_tip:'They shared something vulnerable. Show empathy before giving your perspective.',
+    gen_title:'Generate a mission', gen_sub:'The AI creates a unique question based on your interests.',
+    cat_philo:'Philosophy', cat_crea:'Creativity', cat_adv:'Adventure', cat_hum:'Humor', cat_emo:'Emotional',
+    gen_placeholder:'Click Generate to create a unique mission...', gen_btn:'⚡ Generate (1 credit)',
+    matches_title:'Your Matches', matches_sub:'Connections created after successful missions',
+    compat:'Compatibility', continue_chat:'Continue conversation',
+    shop_title:'Spark Shop', shop_sub:'Generate missions, reveal profiles, boost visibility',
+    credits_avail:'credits available', packs_title:'CREDIT PACKS',
+    popular:'⭐ POPULAR', buy:'Buy', subscribe:'Subscribe', perks_title:'CREDIT USAGE',
+    pk1:'Generate a mission', pk1d:'Unique AI question', pk2:'Reveal a photo', pk2d:'See before end',
+    pk3:'Profile boost', pk3d:'3x visibility / 1h', pk4:'Super Spark', pk4d:'Priority mission',
+    ai_compat:'AI Compatibility', pass:'Skip', launch_mission:'⚡ Mission (1 credit)'
+  }
+};
+
+let lang = localStorage.getItem('spark_lang') || 'fr';
+
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.getElementById('lang-toggle').textContent = lang === 'fr' ? '🌐 EN' : '🌐 FR';
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (T[lang][key]) el.innerHTML = T[lang][key];
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const key = el.dataset.i18nPh;
+    if (T[lang][key]) el.placeholder = T[lang][key];
+  });
+}
+
+function toggleLang() {
+  lang = lang === 'fr' ? 'en' : 'fr';
+  localStorage.setItem('spark_lang', lang);
+  applyLang();
+}
+
+// ===== PARTICLES =====
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let pts = [];
+function resize() { cv.width = innerWidth; cv.height = innerHeight; }
+resize(); addEventListener('resize', resize);
+for (let i = 0; i < 55; i++) pts.push({ x:Math.random()*innerWidth, y:Math.random()*innerHeight, vx:(Math.random()-.5)*.3, vy:(Math.random()-.5)*.3, r:Math.random()*2+.5, o:Math.random()*.35+.1, c:Math.random()>.5?'#f0a500':'#e8350a' });
+(function anim() { ctx.clearRect(0,0,cv.width,cv.height); pts.forEach(p => { p.x+=p.vx; p.y+=p.vy; if(p.x<0)p.x=cv.width; if(p.x>cv.width)p.x=0; if(p.y<0)p.y=cv.height; if(p.y>cv.height)p.y=0; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=p.c; ctx.globalAlpha=p.o; ctx.fill(); ctx.globalAlpha=1; }); requestAnimationFrame(anim); })();
+
+// ===== STATE =====
+let credits = 12, step = 1, selAvatar = '🦋', selCatVal = 'philosophy', curProfile = null;
+const API = window.SPARK_API || 'https://spark-backend.onrender.com';
+
+const profiles = [
+  {name:'Camille',age:26,country:'🇧🇷',city:'São Paulo',avatar:'🌊',compat:87,tags:['🎨 Art','✈️ Travel','🧠 Philosophy'],revealed:false},
+  {name:'Lucas',age:28,country:'🇪🇸',city:'Madrid',avatar:'🔥',compat:91,tags:['🎵 Music','💻 Tech','🍳 Food'],revealed:true},
+  {name:'Yuki',age:23,country:'🇯🇵',city:'Tokyo',avatar:'🌙',compat:78,tags:['🎬 Cinema','📚 Books','🌿 Nature'],revealed:false},
+  {name:'Amara',age:25,country:'🇸🇳',city:'Dakar',avatar:'🌸',compat:84,tags:['🎨 Art','🌍 Travel','🎵 Music'],revealed:true},
+  {name:'Mateo',age:30,country:'🇮🇹',city:'Rome',avatar:'⚡',compat:72,tags:['🍳 Food','📚 Books','🔬 Science'],revealed:false},
+  {name:'Sofia',age:24,country:'🇩🇪',city:'Berlin',avatar:'🎯',compat:89,tags:['💻 Tech','🧠 Philosophy','🎮 Gaming'],revealed:false},
+];
+
+// ===== NAVIGATION =====
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'app') renderProfiles();
+}
+
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(t => t.classList.remove('active'));
+  document.getElementById('t-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ===== ONBOARDING =====
+function goStep(n) {
+  document.getElementById('s'+step).style.display = 'none';
+  step = n;
+  document.getElementById('s'+n).style.display = 'block';
+  for (let i=1;i<=3;i++) document.getElementById('sd'+i).classList.toggle('on', i<=n);
+}
+function selAv(el) { document.querySelectorAll('.av').forEach(a=>a.classList.remove('sel')); el.classList.add('sel'); selAvatar=el.dataset.v; }
+function togInt(el) {
+  const sel = document.querySelectorAll('.itag.sel');
+  if (!el.classList.contains('sel') && sel.length >= 5) { showToast('Max 5'); return; }
+  el.classList.toggle('sel');
+}
+function selIntent(el) { document.querySelectorAll('.iopt').forEach(o=>o.classList.remove('sel')); el.classList.add('sel'); }
+
+async function submitSignup() {
+  const name = document.getElementById('ob-name').value.trim();
+  const email = document.getElementById('ob-email').value.trim();
+  const pw = document.getElementById('ob-pw').value;
+  if (!name || !email || !pw) { showToast('⚠️ Remplis tous les champs'); return; }
+  if (pw.length < 8) { showToast('⚠️ Mot de passe trop court'); return; }
+  const interests = [...document.querySelectorAll('.itag.sel')].map(el => el.textContent.trim());
+  const intent = document.querySelector('.iopt.sel')?.textContent.trim() || '';
+  try {
+    const res = await fetch(`${API}/api/auth/signup`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ name, email, password:pw, age:parseInt(document.getElementById('ob-age').value)||25, country:document.getElementById('ob-country').value, avatar:selAvatar, bio:document.getElementById('ob-bio').value, intent, interests })
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast('❌ '+data.error); return; }
+    showToast('✨ Profil créé ! Bienvenue '+name);
+    setTimeout(()=>goTo('app'), 800);
+  } catch { showToast('❌ Erreur de connexion'); }
+}
+
+// ===== PROFILES =====
+function renderProfiles() {
+  document.getElementById('pgrid').innerHTML = profiles.map((p,i) => `
+    <div class="pcard" onclick="openProfile(${i})">
+      <div class="pav ${p.revealed?'revealed':''}" style="background:hsl(${i*40},18%,12%)">
+        <span style="position:relative;z-index:1">${p.avatar}</span>
+        ${!p.revealed?`<div class="blur-lbl">🔒 ${lang==='fr'?'Photo masquée':'Photo hidden'}</div>`:''}
+        <div class="cbadge ${p.compat>=85?'hi':'md'}">${p.compat}%</div>
+      </div>
+      <div class="pinfo">
+        <div class="pname">${p.name}</div>
+        <div class="pmeta">${p.age} · ${p.city} ${p.country}</div>
+        <div class="ptags">${p.tags.map(t=>`<span class="pt">${t}</span>`).join('')}</div>
+        <button class="pcta">⚡ ${lang==='fr'?'Lancer une mission':'Launch a mission'}</button>
+      </div>
+    </div>`).join('');
+}
+
+function openProfile(i) {
+  curProfile = profiles[i];
+  document.getElementById('m-av').textContent = curProfile.avatar;
+  document.getElementById('m-name').textContent = curProfile.name;
+  document.getElementById('m-meta').textContent = `${curProfile.age} · ${curProfile.city} ${curProfile.country}`;
+  document.getElementById('m-fill').style.width = curProfile.compat+'%';
+  document.getElementById('m-pct').textContent = curProfile.compat+'%';
+  document.getElementById('m-tags').innerHTML = curProfile.tags.map(t=>`<span class="mt2">${t}</span>`).join('');
+  document.getElementById('pmodal').classList.add('active');
+}
+function closeModal() { document.getElementById('pmodal').classList.remove('active'); }
+function launchMission() {
+  if (credits < 1) { showToast(lang==='fr'?'⚡ Crédits insuffisants !':'⚡ Not enough credits!'); return; }
+  credits--; updateCredits(); closeModal();
+  showToast(`⚡ ${lang==='fr'?'Mission lancée avec':'Mission launched with'} ${curProfile?.name} !`);
+}
+
+// ===== MISSIONS =====
+function selCat(btn, cat) { document.querySelectorAll('.cat').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); selCatVal=cat; }
+
+async function generateMission() {
+  if (credits < 1) { showToast(lang==='fr'?'⚡ Crédits insuffisants !':'⚡ Not enough credits!'); return; }
+  credits--; updateCredits();
+  document.getElementById('gen-result').innerHTML = '<div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:150,
+        system:`You are the mission engine of SPARK, an international dating app. Generate ONE original, deep question for two strangers to connect. Category: ${selCatVal}. Language: ${lang==='fr'?'French':'English'}. Rules: 1-2 sentences max, intriguing, universal. Respond ONLY with the mission, no quotes, no preamble.`,
+        messages:[{role:'user',content:'Generate a mission.'}]
+      })
+    });
+    const data = await res.json();
+    const mission = data.content?.[0]?.text || (lang==='fr'?'Si tu pouvais vivre une autre vie en parallèle, que changerais-tu ?':'If you could live a parallel life, what would you change?');
+    document.getElementById('gen-result').innerHTML = `<div class="gen-text">"${mission}"</div>`;
+  } catch {
+    document.getElementById('gen-result').innerHTML = `<div class="gen-text">"${lang==='fr'?'Si tu pouvais vivre une autre vie en parallèle, que changerais-tu ?':'If you could live a parallel life, what would you change?'}"</div>`;
+  }
+}
+
+// ===== CHAT =====
+async function sendMsg() {
+  const inp = document.getElementById('msg-in');
+  const msg = inp.value.trim(); if (!msg) return; inp.value='';
+  const area = document.getElementById('msgs');
+  area.innerHTML += `<div class="msg me">${msg}</div>`;
+  area.scrollTop = area.scrollHeight;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:80,
+        system:`You are a connection coach for a dating app. Give ONE ultra-short tip (max 12 words) to deepen the connection. Language: ${lang==='fr'?'French':'English'}. Be concrete and positive. Reply ONLY with the tip.`,
+        messages:[{role:'user',content:`Last message sent: "${msg}". Give a tip.`}]
+      })
+    });
+    const data = await res.json();
+    const tip = data.content?.[0]?.text || (lang==='fr'?'Continue d\'être authentique.':'Keep being authentic.');
+    document.getElementById('coach-tip').textContent = tip;
+  } catch {}
+}
+
+// ===== SHOP =====
+function buyCr(n) { credits+=n; updateCredits(); showToast(`✅ +${n} ${lang==='fr'?'crédits ajoutés':'credits added'} !`); }
+function updateCredits() { document.getElementById('cr-display').textContent=credits; document.getElementById('cr-shop').textContent=credits; }
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t = document.getElementById('toast'); t.textContent=msg;
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ===== INIT =====
+document.getElementById('pmodal').addEventListener('click', e => { if(e.target===document.getElementById('pmodal')) closeModal(); });
+applyLang();
+</script>
+</body>
+</html>

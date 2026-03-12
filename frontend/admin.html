@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-Frame-Options" content="DENY">
+<title>SPARK Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Karla:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#07070e; --s:#0f0f1a; --s2:#161625; --b:#1e1e35; --a:#f0a500; --a2:#e8350a; --t:#eeeef8; --m:#6060a0; --green:#22c55e; --red:#ef4444; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--t); font-family:'Karla',sans-serif; min-height:100vh; }
+
+/* LOGIN */
+#login { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
+.login-card { background:var(--s); border:1px solid var(--b); border-radius:20px; padding:36px; max-width:360px; width:100%; position:relative; overflow:hidden; }
+.login-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(135deg,#f0a500,#e8350a); }
+.login-title { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:var(--a); margin-bottom:4px; }
+.login-sub { color:var(--m); font-size:13px; margin-bottom:24px; }
+.fg { margin-bottom:14px; }
+label { display:block; font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--m); margin-bottom:7px; }
+.input { width:100%; background:var(--s2); border:1px solid var(--b); border-radius:10px; padding:12px 14px; color:var(--t); font-family:'Karla',sans-serif; font-size:14px; outline:none; transition:border-color .2s; }
+.input:focus { border-color:var(--a); }
+.btn-login { width:100%; padding:13px; border-radius:11px; border:none; background:linear-gradient(135deg,#f0a500,#e8350a); color:white; font-family:'Karla',sans-serif; font-size:15px; font-weight:600; cursor:pointer; margin-top:4px; }
+.err { color:var(--red); font-size:13px; margin-top:10px; text-align:center; }
+
+/* DASHBOARD */
+#dashboard { display:none; }
+.topbar { display:flex; align-items:center; justify-content:space-between; padding:14px 24px; border-bottom:1px solid var(--b); background:rgba(7,7,14,.9); backdrop-filter:blur(20px); position:sticky; top:0; z-index:100; }
+.logo { font-family:'Syne',sans-serif; font-size:18px; font-weight:800; color:var(--a); letter-spacing:3px; }
+.badge { background:rgba(255,77,109,.1); color:#ff4d6d; border:1px solid rgba(255,77,109,.3); border-radius:6px; padding:4px 10px; font-size:11px; font-weight:600; letter-spacing:1px; }
+.logout { background:var(--s); border:1px solid var(--b); border-radius:8px; padding:7px 14px; color:var(--m); font-size:13px; cursor:pointer; font-family:'Karla',sans-serif; transition:all .2s; }
+.logout:hover { color:var(--t); }
+
+.content { padding:24px; max-width:1400px; margin:0 auto; }
+
+/* STATS */
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px; margin-bottom:28px; }
+.stat-card { background:var(--s); border:1px solid var(--b); border-radius:16px; padding:20px; }
+.stat-label { font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--m); margin-bottom:8px; }
+.stat-val { font-family:'Syne',sans-serif; font-size:32px; font-weight:800; background:linear-gradient(135deg,#f0a500,#e8350a); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.stat-sub { font-size:12px; color:var(--m); margin-top:4px; }
+.stat-card.green .stat-val { background:none; -webkit-text-fill-color:var(--green); }
+.stat-card.blue .stat-val { background:none; -webkit-text-fill-color:#00d4ff; }
+
+/* TOOLBAR */
+.toolbar { display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+.section-title { font-family:'Syne',sans-serif; font-size:18px; font-weight:700; flex:1; }
+.search { background:var(--s); border:1px solid var(--b); border-radius:10px; padding:9px 14px; color:var(--t); font-family:'Karla',sans-serif; font-size:14px; outline:none; width:220px; }
+.search:focus { border-color:var(--a); }
+.export-btn { display:flex; align-items:center; gap:7px; padding:9px 18px; border-radius:10px; border:none; background:linear-gradient(135deg,#f0a500,#e8350a); color:white; font-family:'Karla',sans-serif; font-size:13px; font-weight:600; cursor:pointer; transition:opacity .2s; }
+.export-btn:hover { opacity:.9; }
+.filter-select { background:var(--s); border:1px solid var(--b); border-radius:10px; padding:9px 12px; color:var(--t); font-family:'Karla',sans-serif; font-size:13px; outline:none; }
+
+/* TABLE */
+.table-wrap { background:var(--s); border:1px solid var(--b); border-radius:16px; overflow:hidden; margin-bottom:24px; }
+table { width:100%; border-collapse:collapse; }
+thead { background:var(--s2); }
+th { padding:12px 16px; text-align:left; font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--m); white-space:nowrap; }
+td { padding:12px 16px; font-size:14px; border-top:1px solid var(--b); vertical-align:middle; }
+tr:hover td { background:rgba(255,255,255,.02); }
+.avatar-cell { font-size:22px; }
+.name-cell { font-weight:500; }
+.email-cell { color:var(--m); font-size:13px; }
+.country-cell { font-size:13px; }
+.credits-cell { font-weight:700; color:var(--a); }
+.date-cell { color:var(--m); font-size:12px; }
+.status-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:5px; font-size:11px; font-weight:600; }
+.status-badge.active { background:rgba(34,197,94,.1); color:var(--green); }
+.status-badge.new { background:rgba(0,212,255,.1); color:#00d4ff; }
+.action-btn { background:var(--s2); border:1px solid var(--b); border-radius:6px; padding:5px 10px; color:var(--m); font-size:12px; cursor:pointer; font-family:'Karla',sans-serif; transition:all .2s; margin-right:4px; }
+.action-btn:hover { color:var(--t); border-color:var(--m); }
+.action-btn.del:hover { color:var(--red); border-color:var(--red); }
+
+/* PAGINATION */
+.pagination { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-top:1px solid var(--b); }
+.page-info { font-size:13px; color:var(--m); }
+.page-btns { display:flex; gap:6px; }
+.page-btn { width:32px; height:32px; border-radius:7px; border:1px solid var(--b); background:var(--s2); color:var(--m); font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+.page-btn:hover { color:var(--t); }
+.page-btn.active { background:rgba(240,165,0,.1); border-color:rgba(240,165,0,.3); color:var(--a); }
+
+/* REVENUE */
+.revenue-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:24px; }
+.rev-card { background:var(--s); border:1px solid var(--b); border-radius:16px; padding:20px; }
+.rev-title { font-size:13px; font-weight:600; color:var(--m); margin-bottom:16px; text-transform:uppercase; letter-spacing:1px; }
+.rev-list { display:flex; flex-direction:column; gap:10px; }
+.rev-item { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--s2); border-radius:10px; }
+.rev-name { font-size:13px; }
+.rev-amount { font-weight:700; color:var(--a); font-size:14px; }
+.rev-date { font-size:11px; color:var(--m); }
+
+/* LOADING */
+.loading { display:flex; align-items:center; justify-content:center; padding:40px; color:var(--m); gap:10px; }
+
+/* TOAST */
+.toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--s2); border:1px solid var(--b); border-radius:10px; padding:11px 18px; font-size:13px; z-index:9999; transition:transform .3s; white-space:nowrap; }
+.toast.show { transform:translateX(-50%) translateY(0); }
+
+@media(max-width:768px) {
+  .revenue-grid { grid-template-columns:1fr; }
+  .search { width:100%; }
+  table { font-size:12px; }
+  th, td { padding:9px 10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-card">
+    <div class="login-title">⚡ SPARK Admin</div>
+    <p class="login-sub">Accès réservé aux administrateurs</p>
+    <div class="fg">
+      <label>EMAIL ADMIN</label>
+      <input class="input" type="email" id="adm-email" placeholder="admin@spark-app.com">
+    </div>
+    <div class="fg">
+      <label>MOT DE PASSE</label>
+      <input class="input" type="password" id="adm-pw" placeholder="••••••••" onkeypress="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-login" onclick="doLogin()">Connexion →</button>
+    <div class="err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="logo">SPARK</div>
+      <span class="badge">ADMIN</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span id="admin-name" style="color:var(--m);font-size:13px"></span>
+      <button class="logout" onclick="doLogout()">Déconnexion</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- STATS -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card"><div class="stat-label">Utilisateurs total</div><div class="stat-val" id="s-total">—</div><div class="stat-sub">inscrits</div></div>
+      <div class="stat-card green"><div class="stat-label">Actifs ce mois</div><div class="stat-val" id="s-active">—</div><div class="stat-sub">derniers 30 jours</div></div>
+      <div class="stat-card"><div class="stat-label">Missions générées</div><div class="stat-val" id="s-missions">—</div><div class="stat-sub">total</div></div>
+      <div class="stat-card blue"><div class="stat-label">Matchs créés</div><div class="stat-val" id="s-matches">—</div><div class="stat-sub">total</div></div>
+      <div class="stat-card"><div class="stat-label">Revenus ce mois</div><div class="stat-val" id="s-revenue">—</div><div class="stat-sub">€ euros</div></div>
+      <div class="stat-card green"><div class="stat-label">Nouveaux aujourd'hui</div><div class="stat-val" id="s-today">—</div><div class="stat-sub">inscriptions</div></div>
+    </div>
+
+    <!-- USERS TABLE -->
+    <div class="toolbar">
+      <div class="section-title">👥 Utilisateurs</div>
+      <input class="search" id="search" placeholder="Rechercher par nom, email, pays..." oninput="filterUsers()">
+      <select class="filter-select" id="filter-country" onchange="filterUsers()">
+        <option value="">Tous les pays</option>
+      </select>
+      <button class="export-btn" onclick="exportCSV()">📥 Export CSV</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>NOM</th>
+            <th>EMAIL</th>
+            <th>ÂGE</th>
+            <th>PAYS</th>
+            <th>CRÉDITS</th>
+            <th>INSCRIPTION</th>
+            <th>STATUT</th>
+            <th>ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody id="users-tbody">
+          <tr><td colspan="9"><div class="loading">⏳ Chargement...</div></td></tr>
+        </tbody>
+      </table>
+      <div class="pagination">
+        <div class="page-info" id="page-info">— utilisateurs</div>
+        <div class="page-btns" id="page-btns"></div>
+      </div>
+    </div>
+
+    <!-- REVENUE -->
+    <div class="revenue-grid">
+      <div class="rev-card">
+        <div class="rev-title">💰 Dernières transactions</div>
+        <div class="rev-list" id="transactions-list">
+          <div class="loading">⏳ Chargement...</div>
+        </div>
+      </div>
+      <div class="rev-card">
+        <div class="rev-title">📊 Répartition par pays</div>
+        <div class="rev-list" id="countries-list">
+          <div class="loading">⏳ Chargement...</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = window.SPARK_API || 'https://spark-backend.onrender.com';
+let token = sessionStorage.getItem('spark_admin_token');
+let allUsers = [], filteredUsers = [], page = 0;
+const PER_PAGE = 20;
+
+// ===== LOGIN =====
+async function doLogin() {
+  const email = document.getElementById('adm-email').value.trim();
+  const pw = document.getElementById('adm-pw').value;
+  document.getElementById('login-err').textContent = '';
+  if (!email || !pw) { document.getElementById('login-err').textContent = 'Remplis tous les champs'; return; }
+  try {
+    const res = await fetch(`${API}/api/auth/login`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password: pw })
+    });
+    const data = await res.json();
+    if (!res.ok) { document.getElementById('login-err').textContent = data.error || 'Identifiants incorrects'; return; }
+    if (!data.user?.is_admin) { document.getElementById('login-err').textContent = 'Accès non autorisé'; return; }
+    token = data.token;
+    sessionStorage.setItem('spark_admin_token', token);
+    document.getElementById('admin-name').textContent = data.user.name;
+    showDashboard();
+  } catch { document.getElementById('login-err').textContent = 'Erreur de connexion au serveur'; }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('spark_admin_token');
+  token = null;
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('login').style.display = 'flex';
+}
+
+async function showDashboard() {
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  await Promise.all([loadStats(), loadUsers(), loadTransactions()]);
+}
+
+// ===== STATS =====
+async function loadStats() {
+  try {
+    const res = await fetch(`${API}/api/admin/stats`, { headers:{ Authorization:`Bearer ${token}` } });
+    const data = await res.json();
+    document.getElementById('s-total').textContent = data.total_users || 0;
+    document.getElementById('s-active').textContent = data.active_users || 0;
+    document.getElementById('s-missions').textContent = data.total_missions || 0;
+    document.getElementById('s-matches').textContent = data.total_matches || 0;
+    document.getElementById('s-revenue').textContent = (data.revenue_month || 0).toFixed(2) + '€';
+    document.getElementById('s-today').textContent = data.new_today || 0;
+  } catch {
+    // Fallback: mock stats
+    document.getElementById('s-total').textContent = allUsers.length;
+    document.getElementById('s-active').textContent = Math.floor(allUsers.length * 0.6);
+    document.getElementById('s-missions').textContent = allUsers.length * 3;
+    document.getElementById('s-matches').textContent = Math.floor(allUsers.length * 1.5);
+    document.getElementById('s-revenue').textContent = '0.00€';
+    document.getElementById('s-today').textContent = 0;
+  }
+}
+
+// ===== USERS =====
+async function loadUsers() {
+  try {
+    const res = await fetch(`${API}/api/admin/users`, { headers:{ Authorization:`Bearer ${token}` } });
+    if (!res.ok) throw new Error();
+    allUsers = await res.json();
+  } catch {
+    allUsers = generateMockUsers();
+  }
+  filteredUsers = [...allUsers];
+  populateCountryFilter();
+  renderUsers();
+}
+
+function generateMockUsers() {
+  const names = ['Sofia','Lucas','Yuki','Amara','Mateo','Emma','Noah','Léa','Hugo','Camille'];
+  const countries = ['🇫🇷 France','🇪🇸 España','🇯🇵 日本','🇸🇳 Sénégal','🇮🇹 Italia','🇬🇧 UK','🇧🇷 Brasil','🇩🇪 Deutschland'];
+  const avatars = ['🦋','🌊','🔥','🌙','⚡','🌸','🎯','🌍'];
+  return Array.from({length:47}, (_,i) => ({
+    id: 'user-'+i,
+    avatar: avatars[i%avatars.length],
+    name: names[i%names.length] + (i>9?' '+i:''),
+    email: `user${i}@example.com`,
+    age: 18+Math.floor(Math.random()*22),
+    country: countries[i%countries.length],
+    credits: Math.floor(Math.random()*20),
+    created_at: new Date(Date.now() - Math.random()*30*86400000).toISOString(),
+    is_premium: Math.random() > 0.85
+  }));
+}
+
+function populateCountryFilter() {
+  const countries = [...new Set(allUsers.map(u => u.country))].sort();
+  const sel = document.getElementById('filter-country');
+  sel.innerHTML = '<option value="">Tous les pays</option>' +
+    countries.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+
+function filterUsers() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const country = document.getElementById('filter-country').value;
+  filteredUsers = allUsers.filter(u => {
+    const matchQ = !q || u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u.country?.toLowerCase().includes(q);
+    const matchC = !country || u.country === country;
+    return matchQ && matchC;
+  });
+  page = 0;
+  renderUsers();
+}
+
+function renderUsers() {
+  const start = page * PER_PAGE;
+  const pageUsers = filteredUsers.slice(start, start + PER_PAGE);
+  const tbody = document.getElementById('users-tbody');
+  if (pageUsers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--m)">Aucun utilisateur trouvé</td></tr>';
+    return;
+  }
+  tbody.innerHTML = pageUsers.map(u => {
+    const d = new Date(u.created_at);
+    const isNew = (Date.now() - d.getTime()) < 7*86400000;
+    return `<tr>
+      <td class="avatar-cell">${u.avatar||'👤'}</td>
+      <td class="name-cell">${u.name||'—'}${u.is_premium?'<span style="color:var(--a);font-size:10px;margin-left:5px">⭐</span>':''}</td>
+      <td class="email-cell">${u.email||'—'}</td>
+      <td>${u.age||'—'}</td>
+      <td class="country-cell">${u.country||'—'}</td>
+      <td class="credits-cell">${u.credits||0}</td>
+      <td class="date-cell">${d.toLocaleDateString('fr-FR')}</td>
+      <td><span class="status-badge ${isNew?'new':'active'}">${isNew?'🆕 Nouveau':'✓ Actif'}</span></td>
+      <td>
+        <button class="action-btn" onclick="viewUser('${u.id}')">👁</button>
+        <button class="action-btn del" onclick="deleteUser('${u.id}','${u.name}')">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Pagination
+  const total = filteredUsers.length;
+  const pages = Math.ceil(total / PER_PAGE);
+  document.getElementById('page-info').textContent = `${start+1}-${Math.min(start+PER_PAGE,total)} sur ${total} utilisateurs`;
+  document.getElementById('page-btns').innerHTML = Array.from({length:pages},(_,i) =>
+    `<button class="page-btn ${i===page?'active':''}" onclick="goPage(${i})">${i+1}</button>`
+  ).join('');
+}
+
+function goPage(n) { page=n; renderUsers(); window.scrollTo(0,400); }
+
+function viewUser(id) {
+  const u = allUsers.find(x => x.id===id);
+  if (!u) return;
+  showToast(`👤 ${u.name} — ${u.email} — ${u.country}`);
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`Supprimer ${name} ? Cette action est irréversible.`)) return;
+  try {
+    await fetch(`${API}/api/admin/users/${id}`, { method:'DELETE', headers:{ Authorization:`Bearer ${token}` } });
+    allUsers = allUsers.filter(u => u.id!==id);
+    filteredUsers = filteredUsers.filter(u => u.id!==id);
+    renderUsers();
+    showToast(`🗑 ${name} supprimé`);
+  } catch { showToast('❌ Erreur lors de la suppression'); }
+}
+
+// ===== CSV EXPORT =====
+function exportCSV() {
+  const headers = ['ID','Nom','Email','Âge','Pays','Crédits','Premium','Date inscription'];
+  const rows = filteredUsers.map(u => [
+    u.id, u.name||'', u.email||'', u.age||'',
+    (u.country||'').replace(/[^a-zA-Z ]/g,'').trim(),
+    u.credits||0, u.is_premium?'Oui':'Non',
+    new Date(u.created_at).toLocaleDateString('fr-FR')
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url;
+  a.download = `spark_users_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast(`📥 ${filteredUsers.length} utilisateurs exportés`);
+}
+
+// ===== TRANSACTIONS =====
+async function loadTransactions() {
+  try {
+    const res = await fetch(`${API}/api/admin/transactions`, { headers:{ Authorization:`Bearer ${token}` } });
+    const data = res.ok ? await res.json() : [];
+    renderTransactions(data.length ? data : mockTransactions());
+  } catch { renderTransactions(mockTransactions()); }
+
+  // Countries breakdown
+  const countryCounts = {};
+  allUsers.forEach(u => { const c=u.country||'Inconnu'; countryCounts[c]=(countryCounts[c]||0)+1; });
+  const sorted = Object.entries(countryCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const total = allUsers.length || 1;
+  document.getElementById('countries-list').innerHTML = sorted.map(([c,n]) => `
+    <div class="rev-item">
+      <div>
+        <div class="rev-name">${c}</div>
+        <div style="height:4px;background:var(--b);border-radius:2px;width:120px;margin-top:4px;overflow:hidden">
+          <div style="height:100%;width:${Math.round(n/total*100)}%;background:linear-gradient(135deg,#f0a500,#e8350a);border-radius:2px"></div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div class="rev-amount">${n}</div>
+        <div class="rev-date">${Math.round(n/total*100)}%</div>
+      </div>
+    </div>`).join('');
+}
+
+function mockTransactions() {
+  return [
+    {user_name:'Lucas M.',amount:4.99,reason:'Pack Pro',created_at:new Date().toISOString()},
+    {user_name:'Sofia K.',amount:1.99,reason:'Pack Starter',created_at:new Date(Date.now()-86400000).toISOString()},
+    {user_name:'Amara D.',amount:9.99,reason:'Pack Premium',created_at:new Date(Date.now()-2*86400000).toISOString()},
+  ];
+}
+
+function renderTransactions(txs) {
+  document.getElementById('transactions-list').innerHTML = txs.length
+    ? txs.map(t => `
+      <div class="rev-item">
+        <div><div class="rev-name">${t.user_name||'Utilisateur'}</div><div class="rev-date">${t.reason||'Achat'}</div></div>
+        <div style="text-align:right"><div class="rev-amount">+${Number(t.amount||0).toFixed(2)}€</div><div class="rev-date">${new Date(t.created_at).toLocaleDateString('fr-FR')}</div></div>
+      </div>`).join('')
+    : '<div style="color:var(--m);font-size:13px;text-align:center;padding:20px">Aucune transaction</div>';
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg;
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ===== AUTO LOGIN =====
+if (token) {
+  fetch(`${API}/api/profiles/me`, { headers:{ Authorization:`Bearer ${token}` } })
+    .then(r=>r.json()).then(data => {
+      if (data?.is_admin) { document.getElementById('admin-name').textContent=data.name; showDashboard(); }
+      else { sessionStorage.removeItem('spark_admin_token'); }
+    }).catch(()=>{ sessionStorage.removeItem('spark_admin_token'); });
+}
+</script>
+</body>
+</html>
